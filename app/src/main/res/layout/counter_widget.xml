@@ -5,7 +5,8 @@
     android:background="?attr/appWidgetBackgroundColor"
     android:gravity="center"
     android:padding="@dimen/widget_margin"
-    android:theme="@style/ThemeOverlay.CounterWidget.AppWidgetContainer">
+    android:theme="@style/ThemeOverlay.CounterWidget.AppWidgetContainer"
+    android:id="@+id/frame">
 
     <Button
         android:id="@+id/counter_button"

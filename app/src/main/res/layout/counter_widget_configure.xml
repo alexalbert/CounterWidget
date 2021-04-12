@@ -9,19 +9,55 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
+        android:background="@color/white"
         android:text="@string/configure" />
 
-    <EditText
-        android:id="@+id/counter_button"
+    <RadioGroup
+        android:id="@+id/radio_group"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="text" />
+        android:background="@color/purple_500">
+
+        <RadioButton
+            android:id="@+id/radioButton1"
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:background="#264653"
+            />
+
+        <RadioButton
+            android:id="@+id/radioButton2"
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:background="#2A9D8F" />
+
+        <RadioButton
+            android:id="@+id/radioButton3"
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:background="#E9C46A" />
+
+        <RadioButton
+            android:id="@+id/radioButton4"
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:background="#F4A261" />
+
+        <RadioButton
+            android:id="@+id/radioButton5"
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:background="#E76F51" />
+    </RadioGroup>
 
     <Button
         android:id="@+id/add_button"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_height="119dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginHorizontal="100sp"
+        android:layout_marginVertical="100sp"
+        android:paddingHorizontal="100sp"
         android:text="@string/add_widget" />
 
 </LinearLayout>

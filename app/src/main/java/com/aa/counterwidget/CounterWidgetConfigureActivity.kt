@@ -4,26 +4,36 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.RadioButton
+import android.widget.RadioGroup
 
 /**
  * The configuration screen for the [NewAppWidget] AppWidget.
  */
 class CounterWidgetConfigureActivity : Activity() {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
-    private lateinit var appWidgetText: EditText
+    private var appWidgetBg: Int = -1
     private var onClickListener = View.OnClickListener {
         val context = this@CounterWidgetConfigureActivity
 
         // When the button is clicked, store the string locally
-        val widgetText = appWidgetText.text.toString()
-        saveTitlePref(context, appWidgetId, widgetText)
+        val rg = findViewById<View>(R.id.radio_group) as RadioGroup
+        val id = rg.checkedRadioButtonId
+        val rb = rg.findViewById<View>(id) as RadioButton
+        appWidgetBg = (rb.background as ColorDrawable).color
+
+
+        saveTitlePref(context, appWidgetId, appWidgetBg.toString())
 
         // It is the responsibility of the configuration activity to update the app widget
         val appWidgetManager = AppWidgetManager.getInstance(context)
-        updateAppWidget(context, appWidgetManager, appWidgetId, 0)
+        updateAppWidget(context, appWidgetManager, appWidgetId, 0, appWidgetBg)
 
         // Make sure we pass back the original appWidgetId
         val resultValue = Intent()
@@ -40,7 +50,8 @@ class CounterWidgetConfigureActivity : Activity() {
         setResult(RESULT_CANCELED)
 
         setContentView(R.layout.counter_widget_configure)
-        appWidgetText = findViewById<View>(R.id.counter_button) as EditText
+
+//        appWidgetText = findViewById<View>(R.id.counter_button) as EditText
         findViewById<View>(R.id.add_button).setOnClickListener(onClickListener)
 
         // Find the widget id from the intent.
@@ -58,7 +69,7 @@ class CounterWidgetConfigureActivity : Activity() {
             return
         }
 
-        appWidgetText.setText(loadTitlePref(this@CounterWidgetConfigureActivity, appWidgetId))
+//        appWidgetText.setText(loadTitlePref(this@CounterWidgetConfigureActivity, appWidgetId))
     }
 
 }
