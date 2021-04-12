@@ -6,7 +6,10 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.RemoteViews
+import android.widget.Toast
+import java.lang.String
 
 var REFRESH_ACTION = "android.appwidget.action.APPWIDGET_UPDATE"
 val CLICK_ACTION = "android.appwidget.action.CLICK"
@@ -47,10 +50,18 @@ class CounterWidget : AppWidgetProvider() {
         super.onReceive(context, intent)
         val views = RemoteViews(context!!.packageName, R.layout.counter_widget)
         val appWidgetManager = AppWidgetManager.getInstance(context)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, CounterWidget::class.java))
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(
+            ComponentName(
+                context,
+                CounterWidget::class.java
+            )
+        )
 
         if (intent!!.action == CLICK_ACTION) {
             count++
+            var t = Toast(context)
+            t.setText(intent.data.toString())
+            t.show()
         } else { // Resize
             count = 0
         }
@@ -71,6 +82,10 @@ internal fun updateAppWidget(
     views.setTextViewText(R.id.counter_button, count.toString())
 
     val intent = Intent(context, CounterWidget::class.java)
+    val data: Uri = Uri.withAppendedPath(
+        Uri.parse("URI_SCHEME" + "://widget/id/"), String.valueOf(appWidgetId)
+    )
+    intent.data = data
     intent.action = CLICK_ACTION
     val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0)
 
