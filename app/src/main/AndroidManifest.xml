@@ -12,6 +12,7 @@
         <receiver android:name=".CounterWidget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.CLICK" />
             </intent-filter>
 
             <meta-data
