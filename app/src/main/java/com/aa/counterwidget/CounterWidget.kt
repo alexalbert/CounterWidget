@@ -10,6 +10,8 @@ import android.net.Uri
 import android.widget.RemoteViews
 import android.widget.Toast
 import java.net.URI
+import java.util.*
+import kotlin.collections.HashMap
 
 
 var REFRESH_ACTION = "android.appwidget.action.APPWIDGET_UPDATE"
@@ -57,19 +59,27 @@ class CounterWidget : AppWidgetProvider() {
                 CounterWidget::class.java
             )
         )
+
         var count: Int = 0
 
         if (intent!!.action == CLICK_ACTION) {
             val widgetId = intent!!.data!!.getLastPathSegment()
 
 
+
             if (counts.containsKey(widgetId)) {
                 count = counts[widgetId]!!
+                if (count == 0) {
+                    val cached = Persistence.read(context, widgetId!!)
+                    count = cached.count
+                }
             }
             if (count != null) {
                 count++
             }
             counts[widgetId!!] = count
+
+            Persistence.write(context, widgetId, Snapshot(day(), count))
 
             var t = Toast(context)
             t.setText(intent.data.toString())
@@ -81,6 +91,11 @@ class CounterWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.counter_button, count.toString())
             appWidgetManager.updateAppWidget(appWidgetIds, views)
         }
+    }
+
+    fun day(): Int {
+        var c = Calendar.getInstance()
+        return c.get(Calendar.DAY_OF_YEAR)
     }
 }
 
