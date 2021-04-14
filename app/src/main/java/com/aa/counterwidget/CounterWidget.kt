@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.RemoteViews
 import android.widget.Toast
 import java.net.URI
@@ -24,6 +25,7 @@ class CounterWidget : AppWidgetProvider() {
 
     companion object {
         private var counts = HashMap<String, Int>()
+        private var lastClickTs = 0L
     }
 
     private var views: RemoteViews? = null
@@ -63,20 +65,20 @@ class CounterWidget : AppWidgetProvider() {
         var count: Int = 0
 
         if (intent!!.action == CLICK_ACTION) {
-            val widgetId = intent!!.data!!.getLastPathSegment()
-
-
-
+            val widgetId = intent!!.data!!.lastPathSegment
             if (counts.containsKey(widgetId)) {
-                count = counts[widgetId]!!
-                if (count == 0) {
-                    val cached = Persistence.read(context, widgetId!!)
-                    count = cached.count
+                if(!isDoubleClick()) { // Doubleclick zeroes counter
+                    count = counts[widgetId]!!
+                    if (count == 0) {
+                        val cached = Persistence.read(context, widgetId!!)
+                        count = cached.count
+                    }
+                    if (count != null) {
+                        count++
+                    }
                 }
             }
-            if (count != null) {
-                count++
-            }
+
             counts[widgetId!!] = count
 
             Persistence.write(context, widgetId, Snapshot(day(), count))
@@ -93,10 +95,21 @@ class CounterWidget : AppWidgetProvider() {
         }
     }
 
-    fun day(): Int {
+    private fun day(): Int {
         var c = Calendar.getInstance()
         return c.get(Calendar.DAY_OF_YEAR)
     }
+
+    private fun isDoubleClick(): Boolean {
+        val ts = Date().time
+        var ret = false
+        if (lastClickTs != 0L) {
+            ret = ts - lastClickTs  < 200
+        }
+        lastClickTs = ts
+        return ret
+    }
+
 }
 
 internal fun updateAppWidget(
