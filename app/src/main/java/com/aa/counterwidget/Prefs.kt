@@ -14,8 +14,7 @@ internal fun savePref(context: Context, appWidgetId: Int, pref: String, count: I
 
 internal fun loadPref(context: Context, appWidgetId: Int, pref: String): Int {
     val prefs = context.getSharedPreferences(PREFS_NAME, 0)
-    val count = prefs.getInt(pref + appWidgetId, 0)
-    return count ?: 0
+    return prefs.getInt(pref + appWidgetId, 0)
 }
 
 internal fun deletePref(context: Context, appWidgetId: Int, pref: String) {

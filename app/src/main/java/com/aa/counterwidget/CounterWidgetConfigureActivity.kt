@@ -5,17 +5,16 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.RadioButton
 import android.widget.RadioGroup
 
 /**
- * The configuration screen for the [NewAppWidget] AppWidget.
+ * The configuration screen for the [CounterWidget] AppWidget.
  */
 class CounterWidgetConfigureActivity : Activity() {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
-    private var appWidgetBg: Int = -1
+
     private var onClickListener = View.OnClickListener {
         val context = this@CounterWidgetConfigureActivity
 
@@ -23,14 +22,13 @@ class CounterWidgetConfigureActivity : Activity() {
         val rg = findViewById<View>(R.id.radio_group) as RadioGroup
         val id = rg.checkedRadioButtonId
         val rb = rg.findViewById<View>(id) as RadioButton
-        appWidgetBg = (rb.background as ColorDrawable).color
+        val appWidgetBg = (rb.background as ColorDrawable).color
 
         savePref(context, appWidgetId, COLOR, appWidgetBg)
 
         // It is the responsibility of the configuration activity to update the app widget
         val appWidgetManager = AppWidgetManager.getInstance(context)
         updateAppWidget(context, appWidgetManager, appWidgetId, 0, appWidgetBg)
-        Log.d(WIDGET, "in configure onclick")
 
         // Make sure we pass back the original appWidgetId
         val resultValue = Intent()
@@ -47,7 +45,6 @@ class CounterWidgetConfigureActivity : Activity() {
         setResult(RESULT_CANCELED)
 
         setContentView(R.layout.counter_widget_configure)
-        Log.d(WIDGET, "in configure create")
         findViewById<View>(R.id.add_button).setOnClickListener(onClickListener)
 
         // Find the widget id from the intent.
