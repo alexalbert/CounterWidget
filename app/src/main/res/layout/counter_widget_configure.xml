@@ -8,15 +8,17 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginVertical="20sp"
         android:layout_marginBottom="8dp"
-        android:background="@color/white"
-        android:text="@string/configure" />
+        android:background="@color/black"
+        android:text="@string/configure"
+        android:textColor="@color/white"
+        android:textSize="19sp" />
 
     <RadioGroup
         android:id="@+id/radio_group"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/purple_500">
+        android:layout_height="wrap_content">
 
         <RadioButton
             android:id="@+id/radioButton1"
@@ -52,12 +54,11 @@
 
     <Button
         android:id="@+id/add_button"
-        android:layout_width="wrap_content"
-        android:layout_height="119dp"
+        android:layout_width="167dp"
+        android:layout_height="61dp"
         android:layout_gravity="center_horizontal"
-        android:layout_marginHorizontal="100sp"
-        android:layout_marginVertical="100sp"
-        android:paddingHorizontal="100sp"
+        android:layout_marginVertical="20sp"
+        android:background="@color/light_blue_900"
         android:text="@string/add_widget" />
 
 </LinearLayout>

@@ -10,13 +10,12 @@ import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 import android.widget.Toast
-import java.net.URI
 import java.util.*
 import kotlin.collections.HashMap
 
 
-var REFRESH_ACTION = "android.appwidget.action.APPWIDGET_UPDATE"
 const val CLICK_ACTION = "android.appwidget.action.CLICK"
+const val WIDGET = "mywidget"
 
 /**
  * Implementation of App Widget functionality.
@@ -24,31 +23,30 @@ const val CLICK_ACTION = "android.appwidget.action.CLICK"
 class CounterWidget : AppWidgetProvider() {
 
     companion object {
-        private var counts = HashMap<String, Int>()
         private var lastClickTs = 0L
     }
-
-    private var views: RemoteViews? = null
-
-
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        Log.d(WIDGET, "onupdate")
         // There may be multiple widgets active, so update all of them
-        for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId, 0, -1)
+        for (widgetId in appWidgetIds) {
+            val views = RemoteViews(context.packageName, R.layout.counter_widget)
+            val count = loadPref(context, widgetId, COUNT)
+            val bkColor = loadPref(context, widgetId, COLOR)
+            updateAppWidget(context, appWidgetManager, widgetId, count, bkColor)
         }
     }
 
-    override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
-    }
-
-    override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
+    override fun onDeleted(context: Context?, appWidgetIds: IntArray?) {
+        super.onDeleted(context, appWidgetIds)
+        appWidgetIds?.forEach { id ->
+            deletePref(context!!, id, COUNT)
+            deletePref(context!!, id, COLOR)
+        }
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -62,42 +60,28 @@ class CounterWidget : AppWidgetProvider() {
             )
         )
 
-        var count: Int = 0
+        Log.d(WIDGET, "onreceive")
+
+        var count: Int
 
         if (intent!!.action == CLICK_ACTION) {
-            val widgetId = intent!!.data!!.lastPathSegment
-            if (counts.containsKey(widgetId)) {
-                if(!isDoubleClick()) { // Doubleclick zeroes counter
-                    count = counts[widgetId]!!
-                    if (count == 0) {
-                        val cached = Persistence.read(context, widgetId!!)
-                        count = cached.count
-                    }
-                    if (count != null) {
-                        count++
-                    }
-                }
+            val widgetId = intent!!.data!!.lastPathSegment!!.toInt()
+            if (isDoubleClick()) {
+                count = 0
+            } else {
+                count = loadPref(context, widgetId!!, COUNT)
+                count++
             }
-
-            counts[widgetId!!] = count
-
-            Persistence.write(context, widgetId, Snapshot(day(), count))
+            savePref(context, widgetId!!, COUNT, count)
 
             var t = Toast(context)
             t.setText(intent.data.toString())
             t.show()
+
+
             views.setTextViewText(R.id.counter_button, count.toString())
             appWidgetManager.updateAppWidget(intArrayOf(widgetId!!.toInt()), views)
-        } else { // Resize
-            count = 0
-            views.setTextViewText(R.id.counter_button, count.toString())
-            appWidgetManager.updateAppWidget(appWidgetIds, views)
         }
-    }
-
-    private fun day(): Int {
-        var c = Calendar.getInstance()
-        return c.get(Calendar.DAY_OF_YEAR)
     }
 
     private fun isDoubleClick(): Boolean {
@@ -109,8 +93,8 @@ class CounterWidget : AppWidgetProvider() {
         lastClickTs = ts
         return ret
     }
-
 }
+
 
 internal fun updateAppWidget(
     context: Context,
@@ -125,18 +109,20 @@ internal fun updateAppWidget(
     if (background != -1) {
         views.setInt(R.id.frame, "setBackgroundColor", background)
     }
+    Log.d(WIDGET, "in updateAppWidget")
 
+    // Construct and set click intent
     val intent = Intent(context, CounterWidget::class.java)
     val data: Uri = Uri.withAppendedPath(
         Uri.parse("URI_SCHEME" + "://widget/id/"), appWidgetId.toString())
-
     intent.data = data
     intent.action = CLICK_ACTION
     val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0)
-
     views.setOnClickPendingIntent(R.id.counter_button, pendingIntent)
 
 
     // Instruct the widget manager to update the widget
     appWidgetManager.updateAppWidget(appWidgetId, views)
 }
+
+
