@@ -66,7 +66,7 @@ class CounterWidget : AppWidgetProvider() {
         val ts = Date().time
         var ret = false
         if (lastClickTs != 0L) {
-            ret = ts - lastClickTs  < 200
+            ret = ts - lastClickTs  < 300
         }
         lastClickTs = ts
         return ret
