@@ -48,14 +48,16 @@ class CounterWidget : AppWidgetProvider() {
             val widgetId = intent.data!!.lastPathSegment!!.toInt()
             if (isDoubleClick()) {
                 count = 0
+                TsDataUtil.clearWidgetData(context, widgetId)
             } else {
                 count = loadPref(context, widgetId, COUNT)
                 count++
+                TsDataUtil.addTs(context, widgetId)
             }
             savePref(context, widgetId, COUNT, count)
 
             views.setTextViewText(R.id.counter_button, count.toString())
-            appWidgetManager.updateAppWidget(intArrayOf(widgetId.toInt()), views)
+            appWidgetManager.updateAppWidget(intArrayOf(widgetId), views)
         }
     }
 

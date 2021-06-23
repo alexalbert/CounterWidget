@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_data">
+
+    <fragment
+        android:id="@+id/navigation_data"
+        android:name="com.aa.counterwidget.ui.data.DataFragment"
+        android:label="@string/title_data"
+        tools:layout="@layout/fragment_data" />
+
+    <fragment
+        android:id="@+id/navigation_chart"
+        android:name="com.aa.counterwidget.ui.chart.ChartFragment"
+        android:label="@string/title_chart"
+        tools:layout="@layout/fragment_chart" />
+</navigation>
