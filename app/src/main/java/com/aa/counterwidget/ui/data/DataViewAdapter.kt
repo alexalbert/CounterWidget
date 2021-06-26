@@ -9,15 +9,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.aa.counterwidget.TsColorItem
 import com.aa.counterwidget.databinding.FragmentDataBinding
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
+import com.aa.counterwidget.ui.Util
 
 
-class DataViewAdapter(
-    private var values: List<TsColorItem>, private val bgColor: Int
-) : RecyclerView.Adapter<DataViewAdapter.ViewHolder>() {
+class DataViewAdapter(private var values: List<TsColorItem>, bgColor: Int):
+    RecyclerView.Adapter<DataViewAdapter.ViewHolder>() {
 
-    private var dateFormat = SimpleDateFormat("dd hh:mm")
     private val defaultBackground = bgColor
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -39,7 +36,7 @@ class DataViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = values[position]
         holder.idView.text = String.format("%1$2s", position + 1)
-        holder.contentView.text = dateFormat.format(item.date)
+        holder.contentView.text = Util.formatTime(item.date)
         holder.colorsView.text = ""
 
         for (color in item.colors) {

@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity() {
 
         supportActionBar!!.hide()
 
+
         binding = ActivityInfoBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
