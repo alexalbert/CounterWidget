@@ -26,6 +26,8 @@ class ChartFragment : Fragment() {
 
 class ChartView(context: Context): View(context){
 
+    private val BAND = 1000*60*30 // 30 min
+
     private var w: Int = 0
     private var h: Int = 0
     private val p = Paint()
@@ -33,13 +35,15 @@ class ChartView(context: Context): View(context){
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
+        canvas!!.drawColor(Util.getDefaultBackground(context))
+
         val tsData = TsDataUtil.getTsColorData(context)
 
-        val start = tsData[0].date.time.toFloat()
-        val end = tsData[tsData.size -1].date.time
-        val interval = (end - start)
+        if (tsData.isEmpty()) return
 
-        canvas!!.drawColor(Util.getDefaultBackground(context))
+        val start = tsData[0].date.time.toFloat()
+        val end = tsData[tsData.size -1].date.time.toFloat()
+        val interval = (end - start)
 
         var y = 0f
         var x = 0f
@@ -47,8 +51,12 @@ class ChartView(context: Context): View(context){
 
         for(time in tsData) {
             val ts = time.date.time
-            if (ts - prevTs > 1000*60*30) {
-                y = (ts - start) / interval * (h - 300) + 150
+            if (ts - prevTs > BAND) { // Move to next line only in the hit is in a different band
+                if (interval == 0f) { // First hit
+                    y = 150f
+                } else {
+                    y = (ts - start) / interval * (h - 300) + 150
+                }
                 x = 100f
                 p.textSize = 34f
                 p.color = Color.CYAN
