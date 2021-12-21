@@ -23,5 +23,17 @@ class Util {
         fun formatTime(date: Date): String {
             return timeFormat.format(date)
         }
+
+
+        private var lastClickTs = 0L
+        fun isDoubleClick(): Boolean {
+            val ts = Date().time
+            var ret = false
+            if (lastClickTs != 0L) {
+                ret = ts - lastClickTs  < 300
+            }
+            lastClickTs = ts
+            return ret
+        }
     }
 }

@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.RemoteViews
-import java.util.*
+import com.aa.counterwidget.ui.Util
 
 const val CLICK_ACTION = "android.appwidget.action.CLICK"
 
@@ -23,8 +23,9 @@ class CounterWidget : AppWidgetProvider() {
     ) {
         // There may be multiple widgets active, so update all of them
         for (widgetId in appWidgetIds) {
-            val count = loadPref(context, widgetId, COUNT)
+            val count = TsDataUtil.getWidgetCount(context, widgetId)
             val bkColor = loadPref(context, widgetId, COLOR)
+
             updateAppWidget(context, appWidgetManager, widgetId, count, bkColor)
         }
     }
@@ -32,8 +33,7 @@ class CounterWidget : AppWidgetProvider() {
     override fun onDeleted(context: Context?, appWidgetIds: IntArray?) {
         super.onDeleted(context, appWidgetIds)
         appWidgetIds?.forEach { id ->
-            deletePref(context!!, id, COUNT)
-            deletePref(context, id, COLOR)
+            deletePref(context!!, id, COLOR)
         }
     }
 
@@ -46,32 +46,29 @@ class CounterWidget : AppWidgetProvider() {
 
         if (intent!!.action == CLICK_ACTION) {
             val widgetId = intent.data!!.lastPathSegment!!.toInt()
-            if (isDoubleClick()) {
+            if (Util.isDoubleClick()) {
                 count = 0
                 TsDataUtil.clearWidgetData(context, widgetId)
             } else {
-                count = loadPref(context, widgetId, COUNT)
+                count = TsDataUtil.getWidgetCount(context, widgetId)
                 count++
                 TsDataUtil.addTs(context, widgetId)
             }
-            savePref(context, widgetId, COUNT, count)
 
             views.setTextViewText(R.id.counter_button, count.toString())
             appWidgetManager.updateAppWidget(intArrayOf(widgetId), views)
         }
     }
 
+
     companion object {
-        private var lastClickTs = 0L
-    }
-    private fun isDoubleClick(): Boolean {
-        val ts = Date().time
-        var ret = false
-        if (lastClickTs != 0L) {
-            ret = ts - lastClickTs  < 300
+        fun updateWidgets(context: Context) {
+            val intent = Intent(context, CounterWidget::class.java)
+            intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            val ids = getWidgetIds(context).toIntArray()
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            context.sendBroadcast(intent)
         }
-        lastClickTs = ts
-        return ret
     }
 }
 
@@ -95,7 +92,7 @@ internal fun updateAppWidget(
         Uri.parse("URI_SCHEME" + "://widget/id/"), appWidgetId.toString())
     intent.data = data
     intent.action = CLICK_ACTION
-    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0)
+    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
     views.setOnClickPendingIntent(R.id.counter_button, pendingIntent)
 
     // Instruct the widget manager to update the widget

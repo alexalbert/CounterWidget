@@ -1,5 +1,6 @@
 package com.aa.counterwidget.ui.data
 
+import android.content.Context
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
@@ -7,17 +8,22 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.aa.counterwidget.CounterWidget
 import com.aa.counterwidget.TsColorItem
+import com.aa.counterwidget.TsDataUtil
 import com.aa.counterwidget.databinding.FragmentDataBinding
+import com.aa.counterwidget.getWidgetIds
 import com.aa.counterwidget.ui.Util
-
 
 class DataViewAdapter(private var values: List<TsColorItem>, bgColor: Int):
     RecyclerView.Adapter<DataViewAdapter.ViewHolder>() {
 
     private val defaultBackground = bgColor
+    private lateinit var context: Context
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+
+        context = parent.context
 
         return ViewHolder(
             FragmentDataBinding.inflate(
@@ -47,6 +53,17 @@ class DataViewAdapter(private var values: List<TsColorItem>, bgColor: Int):
 
             word.setSpan(defaultBackground, 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             holder.colorsView.append(word)
+        }
+
+        holder.itemView.setOnClickListener {
+            if (Util.isDoubleClick()) {
+                TsDataUtil.removeTs(context, holder.contentView.text.toString())
+                values = TsDataUtil.getTsColorData(context)
+                notifyDataSetChanged()
+                CounterWidget.updateWidgets(context)
+                val ids = getWidgetIds(context)
+
+            }
         }
     }
 

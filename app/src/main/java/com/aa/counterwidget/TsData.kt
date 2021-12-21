@@ -1,13 +1,13 @@
 package com.aa.counterwidget
 
 import android.content.Context
+import com.aa.counterwidget.ui.Util
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import java.io.*
 import java.util.*
 
-class TsData: HashMap<Int, ArrayList<Date>>(), Serializable{}
-data class TsColorItemOld(val date: Date, val color: Int)
+class TsData: HashMap<Int, ArrayList<Date>>(), Serializable
 data class TsColorItem(val date: Date, val colors: ArrayList<Int>)
 
 class TsDataUtil {
@@ -25,6 +25,23 @@ class TsDataUtil {
             write(context, map)
         }
 
+        fun removeTs(context: Context, date: String)  {
+            val map = read(context)
+            for (widget in map.values) {
+                var forRemoval: Int? = null
+
+                for((index, time)  in widget.withIndex()) {
+                    if (date == Util.formatTime(time))
+                        forRemoval = index
+                }
+                if (forRemoval != null) {
+                    widget.removeAt(forRemoval)
+                    break
+                }
+            }
+            write(context, map)
+        }
+
         private fun write(context: Context, map: TsData) {
             val file = File(context.applicationInfo.dataDir, FILE_NAME)
             val outputStream = ObjectOutputStream(FileOutputStream(file))
@@ -33,41 +50,31 @@ class TsDataUtil {
             outputStream.close()
         }
 
-        fun read(context: Context): TsData {
+        private fun read(context: Context): TsData {
             val file = File(context.applicationInfo.dataDir, FILE_NAME)
             if (!file.exists()) {
                 return TsData()
             }
-            val inputStream = ObjectInputStream(FileInputStream(file))
-            val map = inputStream.readObject() as TsData
-            inputStream.close()
-            return map
+            return try {
+                val inputStream = ObjectInputStream(FileInputStream(file))
+                val map = inputStream.readObject() as TsData
+                inputStream.close()
+                map
+            } catch (e : Exception) {
+                file.delete()
+                TsData()
+            }
         }
 
         fun clearWidgetData(context: Context, widgetId: Int) {
             val map = read(context)
-            map[widgetId] = arrayListOf<Date>()
+            map[widgetId] = arrayListOf()
             write(context, map)
         }
 
-        fun getTsColorDataOld(context: Context) : ArrayList<TsColorItemOld> {
-            val data = read(context)
-
-            val tsColorData = arrayListOf<TsColorItemOld>()
-
-            for (widgetId in data.keys) {
-                val color = loadPref(context, widgetId, COLOR)
-                val timestamps = data[widgetId]
-                if (timestamps != null) {
-                    for (ts in timestamps) {
-                        tsColorData.add(TsColorItemOld(ts, color))
-                    }
-                }
-            }
-
-            tsColorData.sortBy { ts -> ts.date }
-
-            return tsColorData
+        fun getWidgetCount(context: Context, widgetId: Int) : Int {
+            val map = read(context)
+            return map[widgetId]?.size ?: 0
         }
 
         fun getTsColorData(context: Context) : ArrayList<TsColorItem> {
@@ -77,12 +84,13 @@ class TsDataUtil {
 
             for (widgetId in data.keys) {
                 val color = loadPref(context, widgetId, COLOR)
+                if (color == 0) continue
                 val timestamps = data[widgetId]
                 if (timestamps != null) {
                     for (ts in timestamps) {
                         val min = ts.time / 1000 / 60
                         if (tsColorData[min] == null) {
-                            tsColorData[min] = arrayListOf<Int>(color)
+                            tsColorData[min] = arrayListOf(color)
                         } else {
                             tsColorData[min]?.add(color)
                         }
