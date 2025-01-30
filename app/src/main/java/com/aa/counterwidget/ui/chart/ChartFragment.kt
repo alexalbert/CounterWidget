@@ -32,10 +32,10 @@ class ChartView(context: Context): View(context){
     private var h: Int = 0
     private val p = Paint()
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        canvas!!.drawColor(Util.getDefaultBackground(context))
+        canvas.drawColor(Util.getDefaultBackground(context))
 
         val tsData = TsDataUtil.getTsColorData(context)
 
