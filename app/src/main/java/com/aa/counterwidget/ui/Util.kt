@@ -19,9 +19,14 @@ class Util {
         }
 
         private var timeFormat = SimpleDateFormat("kk:mm")
+        private var dateFormat = SimpleDateFormat("yyyy-MM-dd")
 
         fun formatTime(date: Date): String {
             return timeFormat.format(date)
+        }
+
+        fun formatDate(date: Date): String {
+            return dateFormat.format(date)
         }
 
 

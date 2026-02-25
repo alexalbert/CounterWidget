@@ -6,10 +6,15 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.RemoteViews
 import com.aa.counterwidget.ui.Util
 
 const val CLICK_ACTION = "android.appwidget.action.CLICK"
+
+const val TAG = "====================="
+
+
 
 /**
  * Implementation of App Widget functionality.
@@ -23,9 +28,12 @@ class CounterWidget : AppWidgetProvider() {
     ) {
         // There may be multiple widgets active, so update all of them
         for (widgetId in appWidgetIds) {
-            val count = TsDataUtil.getWidgetCount(context, widgetId)
-            val bkColor = loadPref(context, widgetId, COLOR)
 
+            Log.i(TAG, "Updating widget $widgetId")
+            val count = TsDataUtil.getWidgetCount(context, widgetId)
+            Log.i(TAG, "Count $count")
+            val bkColor = loadPref(context, widgetId, COLOR)
+            Log.i(TAG, "Color $bkColor")
             updateAppWidget(context, appWidgetManager, widgetId, count, bkColor)
         }
     }
@@ -47,6 +55,9 @@ class CounterWidget : AppWidgetProvider() {
         if (intent!!.action == CLICK_ACTION) {
             val widgetId = intent.data!!.lastPathSegment!!.toInt()
             if (Util.isDoubleClick()) {
+                val currentCount = TsDataUtil.getWidgetCount(context, widgetId)
+                val color = loadPref(context, widgetId, COLOR)
+                HistoryDataUtil.addPeriod(context, color, currentCount)
                 count = 0
                 TsDataUtil.clearWidgetData(context, widgetId)
             } else {
@@ -97,6 +108,7 @@ internal fun updateAppWidget(
 
     // Instruct the widget manager to update the widget
     appWidgetManager.updateAppWidget(appWidgetId, views)
+    Log.i(TAG, "Updating widget $appWidgetId")
 }
 
 

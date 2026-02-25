@@ -11,6 +11,8 @@ import com.aa.counterwidget.R
 import com.aa.counterwidget.TsDataUtil
 import com.aa.counterwidget.ui.Util
 
+import com.aa.counterwidget.CounterWidget
+
 class DataFragment : Fragment() {
 
     private lateinit var adapter: DataViewAdapter
@@ -37,5 +39,6 @@ class DataFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         adapter.setData(TsDataUtil.getTsColorData(requireContext()))
+        CounterWidget.updateWidgets(requireContext())
     }
 }

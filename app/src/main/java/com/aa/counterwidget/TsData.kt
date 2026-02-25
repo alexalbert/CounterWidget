@@ -10,6 +10,10 @@ import java.util.*
 class TsData: HashMap<Int, ArrayList<Date>>(), Serializable
 data class TsColorItem(val date: Date, val colors: ArrayList<Int>)
 
+data class PeriodColorCount(val color: Int, var count: Int) : Serializable
+data class PeriodSummary(val date: Date, val counts: ArrayList<PeriodColorCount>) : Serializable
+class PeriodHistory : ArrayList<PeriodSummary>(), Serializable
+
 class TsDataUtil {
 
     companion object {
@@ -108,4 +112,85 @@ class TsDataUtil {
     }
 }
 
+class HistoryDataUtil {
 
+    companion object {
+        private const val FILE_NAME = "history"
+        private const val CUTOFF_HOUR = 22
+
+        fun addPeriod(context: Context, color: Int, count: Int) {
+            if (color == 0 || count <= 0) return
+            val history = read(context)
+            val periodDate = normalizePeriodDate(Date())
+
+            var summary: PeriodSummary? = null
+            for (item in history) {
+                if (item.date.time == periodDate.time) {
+                    summary = item
+                    break
+                }
+            }
+            if (summary == null) {
+                summary = PeriodSummary(periodDate, arrayListOf())
+                history.add(summary)
+            }
+
+            var colorCount: PeriodColorCount? = null
+            for (cc in summary.counts) {
+                if (cc.color == color) {
+                    colorCount = cc
+                    break
+                }
+            }
+            if (colorCount == null) {
+                summary.counts.add(PeriodColorCount(color, count))
+            } else {
+                colorCount.count += count
+            }
+
+            write(context, history)
+        }
+
+        fun getHistory(context: Context): List<PeriodSummary> {
+            val history = read(context)
+            return history.sortedByDescending { it.date.time }
+        }
+
+        private fun write(context: Context, history: PeriodHistory) {
+            val file = File(context.applicationInfo.dataDir, FILE_NAME)
+            val outputStream = ObjectOutputStream(FileOutputStream(file))
+            outputStream.writeObject(history)
+            outputStream.flush()
+            outputStream.close()
+        }
+
+        private fun read(context: Context): PeriodHistory {
+            val file = File(context.applicationInfo.dataDir, FILE_NAME)
+            if (!file.exists()) {
+                return PeriodHistory()
+            }
+            return try {
+                val inputStream = ObjectInputStream(FileInputStream(file))
+                val history = inputStream.readObject() as PeriodHistory
+                inputStream.close()
+                history
+            } catch (e: Exception) {
+                file.delete()
+                PeriodHistory()
+            }
+        }
+
+        private fun normalizePeriodDate(date: Date): Date {
+            val cal = Calendar.getInstance()
+            cal.time = date
+            if (cal.get(Calendar.HOUR_OF_DAY) >= CUTOFF_HOUR) {
+                cal.add(Calendar.DAY_OF_YEAR, 1)
+            }
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.time
+        }
+    }
+}

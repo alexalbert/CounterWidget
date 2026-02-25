@@ -16,4 +16,10 @@
         android:name="com.aa.counterwidget.ui.chart.ChartFragment"
         android:label="@string/title_chart"
         tools:layout="@layout/fragment_chart" />
+
+    <fragment
+        android:id="@+id/navigation_history"
+        android:name="com.aa.counterwidget.ui.history.HistoryFragment"
+        android:label="@string/title_history"
+        tools:layout="@layout/fragment_history_list" />
 </navigation>
