@@ -35,6 +35,7 @@ class CounterWidget : AppWidgetProvider() {
             val bkColor = loadPref(context, widgetId, COLOR)
             Log.i(TAG, "Color $bkColor")
             updateAppWidget(context, appWidgetManager, widgetId, count, bkColor)
+            Log.i(TAG, "Update complete widget $widgetId")
         }
     }
 
@@ -53,11 +54,12 @@ class CounterWidget : AppWidgetProvider() {
         var count: Int
 
         if (intent!!.action == CLICK_ACTION) {
+            Log.i(TAG, "onReceive action=${intent.action} data=${intent.data}")
             val widgetId = intent.data!!.lastPathSegment!!.toInt()
             if (Util.isDoubleClick()) {
                 val currentCount = TsDataUtil.getWidgetCount(context, widgetId)
                 val color = loadPref(context, widgetId, COLOR)
-                HistoryDataUtil.addPeriod(context, color, currentCount)
+                HistoryDataUtil.addPeriod(context, widgetId, color, currentCount)
                 count = 0
                 TsDataUtil.clearWidgetData(context, widgetId)
             } else {
@@ -67,6 +69,13 @@ class CounterWidget : AppWidgetProvider() {
             }
 
             views.setTextViewText(R.id.counter_button, count.toString())
+            val bkColor = loadPref(context, widgetId, COLOR)
+            if (bkColor != -1) {
+                views.setInt(R.id.frame, "setBackgroundColor", bkColor)
+                Log.i(TAG, "Click update widget $widgetId count=$count color=$bkColor")
+            } else {
+                Log.i(TAG, "Click update widget $widgetId count=$count color=unset")
+            }
             appWidgetManager.updateAppWidget(intArrayOf(widgetId), views)
         }
     }
@@ -103,7 +112,13 @@ internal fun updateAppWidget(
         Uri.parse("URI_SCHEME" + "://widget/id/"), appWidgetId.toString())
     intent.data = data
     intent.action = CLICK_ACTION
-    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        appWidgetId,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    Log.i(TAG, "PendingIntent widget $appWidgetId action=$CLICK_ACTION data=${intent.data}")
     views.setOnClickPendingIntent(R.id.counter_button, pendingIntent)
 
     // Instruct the widget manager to update the widget

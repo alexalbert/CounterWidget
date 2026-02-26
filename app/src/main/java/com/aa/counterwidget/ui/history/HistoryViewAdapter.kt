@@ -33,7 +33,7 @@ class HistoryViewAdapter(private var values: List<PeriodSummary>) :
         val item = values[position]
         holder.dateView.text = Util.formatDate(item.date)
         holder.countsView.text = ""
-        for (cc in item.counts) {
+        for (cc in item.counts.sortedBy { it.widgetId }) {
             val text = "${cc.count} "
             val span: Spannable = SpannableString(text)
             span.setSpan(

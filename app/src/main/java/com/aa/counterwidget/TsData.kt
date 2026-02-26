@@ -10,7 +10,7 @@ import java.util.*
 class TsData: HashMap<Int, ArrayList<Date>>(), Serializable
 data class TsColorItem(val date: Date, val colors: ArrayList<Int>)
 
-data class PeriodColorCount(val color: Int, var count: Int) : Serializable
+data class PeriodColorCount(val widgetId: Int, val color: Int, var count: Int) : Serializable
 data class PeriodSummary(val date: Date, val counts: ArrayList<PeriodColorCount>) : Serializable
 class PeriodHistory : ArrayList<PeriodSummary>(), Serializable
 
@@ -116,9 +116,7 @@ class HistoryDataUtil {
 
     companion object {
         private const val FILE_NAME = "history"
-        private const val CUTOFF_HOUR = 22
-
-        fun addPeriod(context: Context, color: Int, count: Int) {
+        fun addPeriod(context: Context, widgetId: Int, color: Int, count: Int) {
             if (color == 0 || count <= 0) return
             val history = read(context)
             val periodDate = normalizePeriodDate(Date())
@@ -137,13 +135,13 @@ class HistoryDataUtil {
 
             var colorCount: PeriodColorCount? = null
             for (cc in summary.counts) {
-                if (cc.color == color) {
+                if (cc.widgetId == widgetId) {
                     colorCount = cc
                     break
                 }
             }
             if (colorCount == null) {
-                summary.counts.add(PeriodColorCount(color, count))
+                summary.counts.add(PeriodColorCount(widgetId, color, count))
             } else {
                 colorCount.count += count
             }
@@ -183,9 +181,6 @@ class HistoryDataUtil {
         private fun normalizePeriodDate(date: Date): Date {
             val cal = Calendar.getInstance()
             cal.time = date
-            if (cal.get(Calendar.HOUR_OF_DAY) >= CUTOFF_HOUR) {
-                cal.add(Calendar.DAY_OF_YEAR, 1)
-            }
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0)
