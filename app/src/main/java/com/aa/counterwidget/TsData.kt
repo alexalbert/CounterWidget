@@ -116,34 +116,29 @@ class HistoryDataUtil {
 
     companion object {
         private const val FILE_NAME = "history"
-        fun addPeriod(context: Context, widgetId: Int, color: Int, count: Int) {
-            if (color == 0 || count <= 0) return
+        fun addDailySnapshot(context: Context, periodDate: Date, snapshots: List<PeriodColorCount>) {
             val history = read(context)
-            val periodDate = normalizePeriodDate(Date())
+            val normalizedDate = normalizePeriodDate(periodDate)
 
-            var summary: PeriodSummary? = null
-            for (item in history) {
-                if (item.date.time == periodDate.time) {
-                    summary = item
-                    break
-                }
-            }
+            var summary = history.find { it.date.time == normalizedDate.time }
             if (summary == null) {
-                summary = PeriodSummary(periodDate, arrayListOf())
+                summary = PeriodSummary(normalizedDate, arrayListOf())
                 history.add(summary)
             }
 
-            var colorCount: PeriodColorCount? = null
-            for (cc in summary.counts) {
-                if (cc.widgetId == widgetId) {
-                    colorCount = cc
-                    break
+            for (snapshot in snapshots) {
+                if (snapshot.color == 0) continue
+                var existing = summary.counts.find { it.widgetId == snapshot.widgetId }
+                if (existing == null) {
+                    existing = PeriodColorCount(snapshot.widgetId, snapshot.color, snapshot.count)
+                    summary.counts.add(existing)
+                } else {
+                    existing.count = snapshot.count
                 }
-            }
-            if (colorCount == null) {
-                summary.counts.add(PeriodColorCount(widgetId, color, count))
-            } else {
-                colorCount.count += count
+                if (existing.color != snapshot.color) {
+                    summary.counts.removeIf { it.widgetId == snapshot.widgetId }
+                    summary.counts.add(PeriodColorCount(snapshot.widgetId, snapshot.color, snapshot.count))
+                }
             }
 
             write(context, history)

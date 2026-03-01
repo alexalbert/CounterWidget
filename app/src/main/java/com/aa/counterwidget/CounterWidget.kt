@@ -26,6 +26,7 @@ class CounterWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        DailyRolloverReceiver.ensureRolloverSchedule(context)
         // There may be multiple widgets active, so update all of them
         for (widgetId in appWidgetIds) {
 
@@ -48,35 +49,28 @@ class CounterWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         super.onReceive(context, intent)
-        val views = RemoteViews(context!!.packageName, R.layout.counter_widget)
+        val safeContext = context ?: return
+        val safeIntent = intent ?: return
         val appWidgetManager = AppWidgetManager.getInstance(context)
 
         var count: Int
 
-        if (intent!!.action == CLICK_ACTION) {
-            Log.i(TAG, "onReceive action=${intent.action} data=${intent.data}")
-            val widgetId = intent.data!!.lastPathSegment!!.toInt()
+        if (safeIntent.action == CLICK_ACTION) {
+            Log.i(TAG, "onReceive action=${safeIntent.action} data=${safeIntent.data}")
+            val widgetId = safeIntent.data?.lastPathSegment?.toIntOrNull() ?: return
             if (Util.isDoubleClick()) {
-                val currentCount = TsDataUtil.getWidgetCount(context, widgetId)
-                val color = loadPref(context, widgetId, COLOR)
-                HistoryDataUtil.addPeriod(context, widgetId, color, currentCount)
                 count = 0
-                TsDataUtil.clearWidgetData(context, widgetId)
+                TsDataUtil.clearWidgetData(safeContext, widgetId)
             } else {
-                count = TsDataUtil.getWidgetCount(context, widgetId)
+                count = TsDataUtil.getWidgetCount(safeContext, widgetId)
                 count++
-                TsDataUtil.addTs(context, widgetId)
+                TsDataUtil.addTs(safeContext, widgetId)
             }
 
-            views.setTextViewText(R.id.counter_button, count.toString())
-            val bkColor = loadPref(context, widgetId, COLOR)
-            if (bkColor != -1) {
-                views.setInt(R.id.frame, "setBackgroundColor", bkColor)
-                Log.i(TAG, "Click update widget $widgetId count=$count color=$bkColor")
-            } else {
-                Log.i(TAG, "Click update widget $widgetId count=$count color=unset")
-            }
-            appWidgetManager.updateAppWidget(intArrayOf(widgetId), views)
+            val bkColor = loadPref(safeContext, widgetId, COLOR)
+            Log.i(TAG, "Click update widget $widgetId count=$count color=$bkColor")
+            // Always use the same update path so click PendingIntent is re-bound every time.
+            updateAppWidget(safeContext, appWidgetManager, widgetId, count, bkColor)
         }
     }
 

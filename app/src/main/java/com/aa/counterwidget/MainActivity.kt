@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         supportActionBar!!.hide()
+        DailyRolloverReceiver.ensureRolloverSchedule(this)
 
 
         binding = ActivityInfoBinding.inflate(layoutInflater)
