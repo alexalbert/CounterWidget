@@ -8,19 +8,51 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.aa.counterwidget.R
+import com.aa.counterwidget.SelectedDateStore
 import com.aa.counterwidget.TsDataUtil
+import com.aa.counterwidget.ui.DateSwipeTouchListener
 import com.aa.counterwidget.ui.Util
+import java.util.Date
 
 class ChartFragment : Fragment() {
+
+    private lateinit var dateView: TextView
+    private lateinit var chartView: ChartView
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        val root = inflater.inflate(R.layout.fragment_chart, container, false)
+        dateView = root.findViewById(R.id.date)
+        val chartContainer = root.findViewById<FrameLayout>(R.id.chart_container)
+        chartView = ChartView(requireContext())
+        chartContainer.addView(
+            chartView,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
 
-        return ChartView(activity as Context)
+        val swipeListener = DateSwipeTouchListener(
+            onSwipeLeft = { SelectedDateStore.move(1) },
+            onSwipeRight = { SelectedDateStore.move(-1) }
+        )
+        dateView.setOnTouchListener(swipeListener)
+        chartView.setOnTouchListener(swipeListener)
+
+        SelectedDateStore.selectedDate.observe(viewLifecycleOwner) { date ->
+            dateView.text = Util.formatDate(date)
+            chartView.setDate(date)
+        }
+
+        return root
     }
 }
 
@@ -31,13 +63,19 @@ class ChartView(context: Context): View(context){
     private var w: Int = 0
     private var h: Int = 0
     private val p = Paint()
+    private var periodDate: Date = SelectedDateStore.currentDate()
+
+    fun setDate(date: Date) {
+        periodDate = date
+        invalidate()
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         canvas.drawColor(Util.getDefaultBackground(context))
 
-        val tsData = TsDataUtil.getTsColorData(context)
+        val tsData = TsDataUtil.getTsColorData(context, periodDate)
 
         if (tsData.isEmpty()) return
 

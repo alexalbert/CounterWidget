@@ -29,6 +29,31 @@ class Util {
             return dateFormat.format(date)
         }
 
+        fun startOfDay(date: Date): Date {
+            val cal = Calendar.getInstance()
+            cal.time = date
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.time
+        }
+
+        fun today(): Date {
+            return startOfDay(Date())
+        }
+
+        fun addDays(date: Date, days: Int): Date {
+            val cal = Calendar.getInstance()
+            cal.time = startOfDay(date)
+            cal.add(Calendar.DAY_OF_YEAR, days)
+            return cal.time
+        }
+
+        fun isSameDay(first: Date, second: Date): Boolean {
+            return startOfDay(first).time == startOfDay(second).time
+        }
+
 
         private var lastClickTs = 0L
         fun isDoubleClick(): Boolean {

@@ -10,6 +10,8 @@ import android.view.ViewGroup
 import com.aa.counterwidget.HistoryDataUtil
 import com.aa.counterwidget.PeriodSummary
 import com.aa.counterwidget.R
+import com.aa.counterwidget.SelectedDateStore
+import androidx.navigation.fragment.findNavController
 
 class HistoryFragment : Fragment() {
 
@@ -26,8 +28,15 @@ class HistoryFragment : Fragment() {
         val history = HistoryDataUtil.getHistory(requireContext())
         val columns = buildColumns(history)
         list.layoutManager = LinearLayoutManager(context)
-        list.adapter = HistoryViewAdapter(history, columns)
+        list.adapter = HistoryViewAdapter(history, columns, SelectedDateStore.currentDate()) { date ->
+            SelectedDateStore.setDate(date)
+            findNavController().navigate(R.id.navigation_data)
+        }
         this.adapter = list.adapter as HistoryViewAdapter
+
+        SelectedDateStore.selectedDate.observe(viewLifecycleOwner) { date ->
+            adapter.setSelectedDate(date)
+        }
 
         return root
     }
@@ -38,6 +47,7 @@ class HistoryFragment : Fragment() {
         val columns = buildColumns(history)
         adapter.setColumns(columns)
         adapter.setData(history)
+        adapter.setSelectedDate(SelectedDateStore.currentDate())
     }
 
     private fun buildColumns(history: List<PeriodSummary>): List<HistoryColumn> {

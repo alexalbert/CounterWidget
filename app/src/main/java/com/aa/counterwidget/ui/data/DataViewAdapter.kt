@@ -12,10 +12,14 @@ import com.aa.counterwidget.CounterWidget
 import com.aa.counterwidget.TsColorItem
 import com.aa.counterwidget.TsDataUtil
 import com.aa.counterwidget.databinding.FragmentDataBinding
-import com.aa.counterwidget.getWidgetIds
 import com.aa.counterwidget.ui.Util
+import java.util.Date
 
-class DataViewAdapter(private var values: List<TsColorItem>, bgColor: Int):
+class DataViewAdapter(
+    private var values: List<TsColorItem>,
+    bgColor: Int,
+    private val selectedDate: () -> Date
+):
     RecyclerView.Adapter<DataViewAdapter.ViewHolder>() {
 
     private val defaultBackground = bgColor
@@ -56,12 +60,11 @@ class DataViewAdapter(private var values: List<TsColorItem>, bgColor: Int):
         }
 
         holder.itemView.setOnClickListener {
-            if (Util.isDoubleClick()) {
+            if (Util.isDoubleClick() && Util.isSameDay(selectedDate(), Date())) {
                 TsDataUtil.removeTs(context, holder.contentView.text.toString())
-                values = TsDataUtil.getTsColorData(context)
+                values = TsDataUtil.getTsColorData(context, selectedDate())
                 notifyDataSetChanged()
                 CounterWidget.updateWidgets(context)
-                val ids = getWidgetIds(context)
 
             }
         }

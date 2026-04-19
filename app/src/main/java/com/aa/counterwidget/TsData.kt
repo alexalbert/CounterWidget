@@ -13,6 +13,7 @@ data class TsColorItem(val date: Date, val colors: ArrayList<Int>)
 data class PeriodColorCount(val widgetId: Int, val color: Int, var count: Int) : Serializable
 data class PeriodSummary(val date: Date, val counts: ArrayList<PeriodColorCount>) : Serializable
 class PeriodHistory : ArrayList<PeriodSummary>(), Serializable
+class PeriodTsHistory : HashMap<Long, TsData>(), Serializable
 
 class TsDataUtil {
 
@@ -44,6 +45,10 @@ class TsDataUtil {
                 }
             }
             write(context, map)
+        }
+
+        fun snapshot(context: Context): TsData {
+            return copyData(read(context))
         }
 
         private fun write(context: Context, map: TsData) {
@@ -81,13 +86,22 @@ class TsDataUtil {
             return map[widgetId]?.size ?: 0
         }
 
-        fun getTsColorData(context: Context) : ArrayList<TsColorItem> {
-            val data = read(context)
+        fun getTsColorData(context: Context, periodDate: Date = Date()) : ArrayList<TsColorItem> {
+            val normalizedDate = Util.startOfDay(periodDate)
+            val data = if (Util.isSameDay(normalizedDate, Date())) {
+                read(context)
+            } else {
+                HistoryDataUtil.getDetailedData(context, normalizedDate) ?: TsData()
+            }
 
             val tsColorData = sortedMapOf<Long, ArrayList<Int>>()
 
             for (widgetId in data.keys) {
-                val color = loadPref(context, widgetId, COLOR)
+                val color = if (Util.isSameDay(normalizedDate, Date())) {
+                    loadPref(context, widgetId, COLOR)
+                } else {
+                    HistoryDataUtil.getColor(context, normalizedDate, widgetId)
+                }
                 if (color == 0) continue
                 val timestamps = data[widgetId]
                 if (timestamps != null) {
@@ -109,6 +123,14 @@ class TsDataUtil {
 
             return tsColorDataCombined
         }
+
+        private fun copyData(data: TsData): TsData {
+            val copy = TsData()
+            for ((widgetId, timestamps) in data) {
+                copy[widgetId] = ArrayList(timestamps.map { Date(it.time) })
+            }
+            return copy
+        }
     }
 }
 
@@ -116,7 +138,14 @@ class HistoryDataUtil {
 
     companion object {
         private const val FILE_NAME = "history"
-        fun addDailySnapshot(context: Context, periodDate: Date, snapshots: List<PeriodColorCount>) {
+        private const val DETAIL_FILE_NAME = "history_details"
+
+        fun addDailySnapshot(
+            context: Context,
+            periodDate: Date,
+            snapshots: List<PeriodColorCount>,
+            detailedData: TsData? = null
+        ) {
             val history = read(context)
             val normalizedDate = normalizePeriodDate(periodDate)
 
@@ -142,11 +171,31 @@ class HistoryDataUtil {
             }
 
             write(context, history)
+
+            if (detailedData != null) {
+                val detailHistory = readDetails(context)
+                detailHistory[normalizedDate.time] = detailedData
+                writeDetails(context, detailHistory)
+            }
         }
 
         fun getHistory(context: Context): List<PeriodSummary> {
             val history = read(context)
             return history.sortedByDescending { it.date.time }
+        }
+
+        fun getDetailedData(context: Context, periodDate: Date): TsData? {
+            return readDetails(context)[normalizePeriodDate(periodDate).time]
+        }
+
+        fun getColor(context: Context, periodDate: Date, widgetId: Int): Int {
+            val normalizedDate = normalizePeriodDate(periodDate)
+            return read(context)
+                .find { it.date.time == normalizedDate.time }
+                ?.counts
+                ?.find { it.widgetId == widgetId }
+                ?.color
+                ?: loadPref(context, widgetId, COLOR)
         }
 
         private fun write(context: Context, history: PeriodHistory) {
@@ -173,14 +222,32 @@ class HistoryDataUtil {
             }
         }
 
+        private fun writeDetails(context: Context, history: PeriodTsHistory) {
+            val file = File(context.applicationInfo.dataDir, DETAIL_FILE_NAME)
+            val outputStream = ObjectOutputStream(FileOutputStream(file))
+            outputStream.writeObject(history)
+            outputStream.flush()
+            outputStream.close()
+        }
+
+        private fun readDetails(context: Context): PeriodTsHistory {
+            val file = File(context.applicationInfo.dataDir, DETAIL_FILE_NAME)
+            if (!file.exists()) {
+                return PeriodTsHistory()
+            }
+            return try {
+                val inputStream = ObjectInputStream(FileInputStream(file))
+                val history = inputStream.readObject() as PeriodTsHistory
+                inputStream.close()
+                history
+            } catch (e: Exception) {
+                file.delete()
+                PeriodTsHistory()
+            }
+        }
+
         private fun normalizePeriodDate(date: Date): Date {
-            val cal = Calendar.getInstance()
-            cal.time = date
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            return cal.time
+            return Util.startOfDay(date)
         }
     }
 }

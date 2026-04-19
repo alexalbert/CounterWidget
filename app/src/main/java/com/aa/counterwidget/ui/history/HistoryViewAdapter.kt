@@ -5,16 +5,21 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.aa.counterwidget.PeriodSummary
+import com.aa.counterwidget.R
 import com.aa.counterwidget.databinding.FragmentHistoryBinding
 import com.aa.counterwidget.ui.Util
+import java.util.Date
 
 data class HistoryColumn(val widgetId: Int, val color: Int)
 
 class HistoryViewAdapter(
     private var values: List<PeriodSummary>,
-    private var columns: List<HistoryColumn>
+    private var columns: List<HistoryColumn>,
+    private var selectedDate: Date,
+    private val onDateClick: (Date) -> Unit
 ) :
     RecyclerView.Adapter<HistoryViewAdapter.ViewHolder>() {
 
@@ -38,10 +43,22 @@ class HistoryViewAdapter(
         notifyDataSetChanged()
     }
 
+    fun setSelectedDate(date: Date) {
+        selectedDate = date
+        notifyDataSetChanged()
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = values[position]
         holder.dateView.text = Util.formatDate(item.date)
         val countByWidgetId = item.counts.associate { it.widgetId to it }
+        val context = holder.itemView.context
+
+        if (Util.isSameDay(item.date, selectedDate)) {
+            holder.itemView.background = ContextCompat.getDrawable(context, R.drawable.history_row_selected)
+        } else {
+            holder.itemView.background = ContextCompat.getDrawable(context, R.drawable.history_row_default)
+        }
 
         holder.columnsContainer.removeAllViews()
         for (column in columns) {
@@ -59,6 +76,10 @@ class HistoryViewAdapter(
             cell.text = if (count == null) "" else count.toString()
             cell.setTextColor(column.color)
             holder.columnsContainer.addView(cell)
+        }
+
+        holder.itemView.setOnClickListener {
+            onDateClick(item.date)
         }
     }
 
