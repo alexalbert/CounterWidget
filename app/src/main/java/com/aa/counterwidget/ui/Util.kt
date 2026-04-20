@@ -34,7 +34,7 @@ class Util {
         fun updateDateHeader(dateView: TextView, date: Date, defaultTextColor: Int) {
             if (isSameDay(date, Date())) {
                 dateView.text = "Today"
-                dateView.setTextColor(dateView.context.getColor(R.color.light_blue_600))
+                dateView.setTextColor(dateView.context.getColor(R.color.light_blue_50))
             } else {
                 dateView.text = formatDate(date)
                 dateView.setTextColor(defaultTextColor)
