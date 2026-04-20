@@ -22,6 +22,7 @@ class ChartFragment : Fragment() {
 
     private lateinit var dateView: TextView
     private lateinit var chartView: ChartView
+    private var defaultDateTextColor: Int = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,6 +31,7 @@ class ChartFragment : Fragment() {
     ): View {
         val root = inflater.inflate(R.layout.fragment_chart, container, false)
         dateView = root.findViewById(R.id.date)
+        defaultDateTextColor = dateView.currentTextColor
         val chartContainer = root.findViewById<FrameLayout>(R.id.chart_container)
         chartView = ChartView(requireContext())
         chartContainer.addView(
@@ -48,7 +50,7 @@ class ChartFragment : Fragment() {
         chartView.setOnTouchListener(swipeListener)
 
         SelectedDateStore.selectedDate.observe(viewLifecycleOwner) { date ->
-            dateView.text = Util.formatDate(date)
+            Util.updateDateHeader(dateView, date, defaultDateTextColor)
             chartView.setDate(date)
         }
 

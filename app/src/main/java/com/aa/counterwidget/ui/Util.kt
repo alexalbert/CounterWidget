@@ -3,6 +3,8 @@ package com.aa.counterwidget.ui
 import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
+import android.widget.TextView
+import com.aa.counterwidget.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -27,6 +29,16 @@ class Util {
 
         fun formatDate(date: Date): String {
             return dateFormat.format(date)
+        }
+
+        fun updateDateHeader(dateView: TextView, date: Date, defaultTextColor: Int) {
+            if (isSameDay(date, Date())) {
+                dateView.text = "Today"
+                dateView.setTextColor(dateView.context.getColor(R.color.light_blue_600))
+            } else {
+                dateView.text = formatDate(date)
+                dateView.setTextColor(defaultTextColor)
+            }
         }
 
         fun startOfDay(date: Date): Date {

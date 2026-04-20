@@ -21,6 +21,7 @@ class DataFragment : Fragment() {
 
     private lateinit var adapter: DataViewAdapter
     private lateinit var dateView: TextView
+    private var defaultDateTextColor: Int = 0
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -29,6 +30,7 @@ class DataFragment : Fragment() {
 
         val view = inflater.inflate(R.layout.fragment_data_list, container, false)
         dateView = view.findViewById(R.id.date)
+        defaultDateTextColor = dateView.currentTextColor
         val list = view.findViewById<RecyclerView>(R.id.list)
 
         val selectedDate = SelectedDateStore.currentDate()
@@ -53,7 +55,7 @@ class DataFragment : Fragment() {
         )
 
         SelectedDateStore.selectedDate.observe(viewLifecycleOwner) { date ->
-            dateView.text = Util.formatDate(date)
+            Util.updateDateHeader(dateView, date, defaultDateTextColor)
             adapter.setData(TsDataUtil.getTsColorData(requireContext(), date))
         }
         return view
@@ -62,7 +64,7 @@ class DataFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         val date = SelectedDateStore.currentDate()
-        dateView.text = Util.formatDate(date)
+        Util.updateDateHeader(dateView, date, defaultDateTextColor)
         adapter.setData(TsDataUtil.getTsColorData(requireContext(), date))
         CounterWidget.updateWidgets(requireContext())
     }
