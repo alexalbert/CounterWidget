@@ -11,6 +11,10 @@ object SelectedDateStore {
         selectedDate.value = Util.startOfDay(date)
     }
 
+    fun resetToToday() {
+        setDate(Util.today())
+    }
+
     fun currentDate(): Date {
         return selectedDate.value ?: Util.today()
     }
