@@ -52,13 +52,15 @@ class DailyRolloverReceiver : BroadcastReceiver() {
         val snapshots = arrayListOf<PeriodColorCount>()
         val widgetIds = getWidgetIds(context)
         val detailedData = TsDataUtil.snapshot(context)
+        val rolledOverColors = mutableSetOf<Int>()
 
         for (widgetId in widgetIds) {
             val color = loadPref(context, widgetId, COLOR)
             if (color == 0) continue
+            if (!rolledOverColors.add(color)) continue
 
             val count = TsDataUtil.getWidgetCount(context, widgetId)
-            snapshots.add(PeriodColorCount(widgetId, color, count))
+            snapshots.add(PeriodColorCount(color, color, count))
             TsDataUtil.clearWidgetData(context, widgetId)
         }
 

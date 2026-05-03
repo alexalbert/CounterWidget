@@ -69,8 +69,7 @@ class CounterWidget : AppWidgetProvider() {
 
             val bkColor = loadPref(safeContext, widgetId, COLOR)
             Log.i(TAG, "Click update widget $widgetId count=$count color=$bkColor")
-            // Always use the same update path so click PendingIntent is re-bound every time.
-            updateAppWidget(safeContext, appWidgetManager, widgetId, count, bkColor)
+            updateAppWidgetsForColor(safeContext, appWidgetManager, bkColor)
         }
     }
 
@@ -82,6 +81,25 @@ class CounterWidget : AppWidgetProvider() {
             val ids = getWidgetIds(context).toIntArray()
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
             context.sendBroadcast(intent)
+        }
+    }
+}
+
+internal fun updateAppWidgetsForColor(
+    context: Context,
+    appWidgetManager: AppWidgetManager,
+    color: Int
+) {
+    for (widgetId in getWidgetIds(context)) {
+        val widgetColor = loadPref(context, widgetId, COLOR)
+        if (widgetColor == color) {
+            updateAppWidget(
+                context,
+                appWidgetManager,
+                widgetId,
+                TsDataUtil.getWidgetCount(context, widgetId),
+                widgetColor
+            )
         }
     }
 }

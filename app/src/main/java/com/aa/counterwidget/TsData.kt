@@ -20,18 +20,19 @@ class TsDataUtil {
     companion object {
         private const val FILE_NAME = "timestamps"
 
-        fun addTs(context: Context, widgetId: Int)  {
-            val map = read(context)
-            if (map.containsKey(widgetId))  {
-                map[widgetId]?.add(Date())
+        fun addTs(context: Context, widgetId: Int)  { val map = readGrouped(context)
+            val color = loadPref(context, widgetId, COLOR)
+            val key = if (color == 0) widgetId else color
+            if (map.containsKey(key))  {
+                map[key]?.add(Date())
             } else {
-                map[widgetId] = arrayListOf(Date())
+                map[key] = arrayListOf(Date())
             }
             write(context, map)
         }
 
         fun removeTs(context: Context, date: String)  {
-            val map = read(context)
+            val map = readGrouped(context)
             for (widget in map.values) {
                 var forRemoval: Int? = null
 
@@ -48,7 +49,7 @@ class TsDataUtil {
         }
 
         fun snapshot(context: Context): TsData {
-            return copyData(read(context))
+            return copyData(readGrouped(context))
         }
 
         private fun write(context: Context, map: TsData) {
@@ -76,20 +77,27 @@ class TsDataUtil {
         }
 
         fun clearWidgetData(context: Context, widgetId: Int) {
-            val map = read(context)
-            map[widgetId] = arrayListOf()
+            val map = readGrouped(context)
+            val color = loadPref(context, widgetId, COLOR)
+            val key = if (color == 0) widgetId else color
+            map[key] = arrayListOf()
+            if (key != widgetId) {
+                map.remove(widgetId)
+            }
             write(context, map)
         }
 
         fun getWidgetCount(context: Context, widgetId: Int) : Int {
-            val map = read(context)
-            return map[widgetId]?.size ?: 0
+            val map = readGrouped(context)
+            val color = loadPref(context, widgetId, COLOR)
+            val key = if (color == 0) widgetId else color
+            return map[key]?.size ?: 0
         }
 
         fun getTsColorData(context: Context, periodDate: Date = Date()) : ArrayList<TsColorItem> {
             val normalizedDate = Util.startOfDay(periodDate)
             val data = if (Util.isSameDay(normalizedDate, Date())) {
-                read(context)
+                readGrouped(context)
             } else {
                 HistoryDataUtil.getDetailedData(context, normalizedDate) ?: TsData()
             }
@@ -98,7 +106,7 @@ class TsDataUtil {
 
             for (widgetId in data.keys) {
                 val color = if (Util.isSameDay(normalizedDate, Date())) {
-                    loadPref(context, widgetId, COLOR)
+                    getCurrentColorForDataKey(context, widgetId)
                 } else {
                     HistoryDataUtil.getColor(context, normalizedDate, widgetId)
                 }
@@ -131,6 +139,47 @@ class TsDataUtil {
             }
             return copy
         }
+
+        private fun readGrouped(context: Context): TsData {
+            val map = read(context)
+            if (migrateActiveWidgetDataToColors(context, map)) {
+                write(context, map)
+            }
+            return map
+        }
+
+        private fun migrateActiveWidgetDataToColors(context: Context, map: TsData): Boolean {
+            var changed = false
+            for (widgetId in getWidgetIds(context)) {
+                val color = loadPref(context, widgetId, COLOR)
+                if (color != 0) {
+                    changed = moveData(map, widgetId, color) || changed
+                }
+            }
+            return changed
+        }
+
+        private fun moveData(map: TsData, fromKey: Int, toKey: Int): Boolean {
+            if (fromKey == toKey) return false
+            val oldTimestamps = map[fromKey] ?: return false
+            if (oldTimestamps.isEmpty()) {
+                map.remove(fromKey)
+                return true
+            }
+            val colorTimestamps = map[toKey]
+            if (colorTimestamps == null) {
+                map[toKey] = oldTimestamps
+            } else {
+                colorTimestamps.addAll(oldTimestamps)
+            }
+            map.remove(fromKey)
+            return true
+        }
+
+        private fun getCurrentColorForDataKey(context: Context, dataKey: Int): Int {
+            val widgetColor = loadPref(context, dataKey, COLOR)
+            return if (widgetColor == 0) dataKey else widgetColor
+        }
     }
 }
 
@@ -155,18 +204,20 @@ class HistoryDataUtil {
                 history.add(summary)
             }
 
+            val countsByColor = linkedMapOf<Int, Int>()
             for (snapshot in snapshots) {
-                if (snapshot.color == 0) continue
-                var existing = summary.counts.find { it.widgetId == snapshot.widgetId }
+                if (snapshot.color != 0) {
+                    countsByColor[snapshot.color] = (countsByColor[snapshot.color] ?: 0) + snapshot.count
+                }
+            }
+
+            for ((color, count) in countsByColor) {
+                var existing = summary.counts.find { it.color == color }
                 if (existing == null) {
-                    existing = PeriodColorCount(snapshot.widgetId, snapshot.color, snapshot.count)
+                    existing = PeriodColorCount(color, color, count)
                     summary.counts.add(existing)
                 } else {
-                    existing.count = snapshot.count
-                }
-                if (existing.color != snapshot.color) {
-                    summary.counts.removeIf { it.widgetId == snapshot.widgetId }
-                    summary.counts.add(PeriodColorCount(snapshot.widgetId, snapshot.color, snapshot.count))
+                    existing.count = count
                 }
             }
 
@@ -181,7 +232,9 @@ class HistoryDataUtil {
 
         fun getHistory(context: Context): List<PeriodSummary> {
             val history = read(context)
-            return history.sortedByDescending { it.date.time }
+            return history
+                .map { aggregateByColor(it) }
+                .sortedByDescending { it.date.time }
         }
 
         fun getDetailedData(context: Context, periodDate: Date): TsData? {
@@ -190,12 +243,33 @@ class HistoryDataUtil {
 
         fun getColor(context: Context, periodDate: Date, widgetId: Int): Int {
             val normalizedDate = normalizePeriodDate(periodDate)
-            return read(context)
+            val counts = read(context)
                 .find { it.date.time == normalizedDate.time }
                 ?.counts
+            val storedColor = counts
                 ?.find { it.widgetId == widgetId }
                 ?.color
-                ?: loadPref(context, widgetId, COLOR)
+                ?: counts
+                    ?.find { it.color == widgetId }
+                    ?.color
+            if (storedColor != null) {
+                return storedColor
+            }
+            val currentColor = loadPref(context, widgetId, COLOR)
+            return if (currentColor == 0) widgetId else currentColor
+        }
+
+        private fun aggregateByColor(summary: PeriodSummary): PeriodSummary {
+            val countsByColor = linkedMapOf<Int, Int>()
+            for (count in summary.counts) {
+                if (count.color != 0) {
+                    countsByColor[count.color] = (countsByColor[count.color] ?: 0) + count.count
+                }
+            }
+            return PeriodSummary(
+                Date(summary.date.time),
+                ArrayList(countsByColor.map { PeriodColorCount(it.key, it.key, it.value) })
+            )
         }
 
         private fun write(context: Context, history: PeriodHistory) {

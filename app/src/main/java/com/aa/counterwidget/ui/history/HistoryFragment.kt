@@ -51,16 +51,14 @@ class HistoryFragment : Fragment() {
     }
 
     private fun buildColumns(history: List<PeriodSummary>): List<HistoryColumn> {
-        val byWidget = linkedMapOf<Int, Int>()
+        val colors = linkedSetOf<Int>()
         for (row in history) {
             for (count in row.counts) {
-                if (!byWidget.containsKey(count.widgetId)) {
-                    byWidget[count.widgetId] = count.color
-                }
+                colors.add(count.color)
             }
         }
-        return byWidget.entries
-            .sortedBy { it.key }
-            .map { HistoryColumn(it.key, it.value) }
+        return colors
+            .sorted()
+            .map { HistoryColumn(it) }
     }
 }

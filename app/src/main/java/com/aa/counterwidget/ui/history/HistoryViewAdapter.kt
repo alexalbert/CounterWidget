@@ -13,7 +13,7 @@ import com.aa.counterwidget.databinding.FragmentHistoryBinding
 import com.aa.counterwidget.ui.Util
 import java.util.Date
 
-data class HistoryColumn(val widgetId: Int, val color: Int)
+data class HistoryColumn(val color: Int)
 
 class HistoryViewAdapter(
     private var values: List<PeriodSummary>,
@@ -51,7 +51,7 @@ class HistoryViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = values[position]
         holder.dateView.text = Util.formatDate(item.date)
-        val countByWidgetId = item.counts.associate { it.widgetId to it }
+        val countByColor = item.counts.associate { it.color to it }
         val context = holder.itemView.context
 
         if (Util.isSameDay(item.date, selectedDate)) {
@@ -72,7 +72,7 @@ class HistoryViewAdapter(
             cell.textAlignment = TextView.TEXT_ALIGNMENT_VIEW_END
             cell.includeFontPadding = false
 
-            val count = countByWidgetId[column.widgetId]?.count
+            val count = countByColor[column.color]?.count
             cell.text = if (count == null) "" else count.toString()
             cell.setTextColor(column.color)
             holder.columnsContainer.addView(cell)
