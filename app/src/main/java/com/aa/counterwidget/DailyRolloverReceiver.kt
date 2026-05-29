@@ -32,45 +32,48 @@ class DailyRolloverReceiver : BroadcastReceiver() {
     }
 
     private fun handleAction(context: Context, action: String) {
-        if (action == Intent.ACTION_DATE_CHANGED || action == MIDNIGHT_ROLLOVER_ACTION) {
-            rolloverPreviousDateIfNeeded(context)
+        if (
+            action == Intent.ACTION_DATE_CHANGED ||
+            action == MIDNIGHT_ROLLOVER_ACTION ||
+            action == Intent.ACTION_BOOT_COMPLETED ||
+            action == Intent.ACTION_TIME_CHANGED ||
+            action == Intent.ACTION_TIMEZONE_CHANGED
+        ) {
+            rolloverPastDatesIfNeeded(context)
         }
         scheduleNextMidnight(context)
     }
 
-    private fun rolloverPreviousDateIfNeeded(context: Context) {
-        val previousDate = previousDateAtMidnight()
-        val previousDateMillis = previousDate.time
-
+    private fun rolloverPastDatesIfNeeded(context: Context) {
+        var changed = false
         val prefs = context.getSharedPreferences(ROLLOVER_PREFS, 0)
-        val lastRollover = prefs.getLong(LAST_ROLLOVER_DATE, -1L)
-        if (lastRollover == previousDateMillis) {
-            Log.i(TAG, "Daily rollover skipped for ${Util.formatDate(previousDate)} (already done)")
-            return
+
+        for (periodDate in TsDataUtil.getActivePeriodDatesBeforeToday(context)) {
+            val periodDateMillis = periodDate.time
+            val lastRollover = prefs.getLong(LAST_ROLLOVER_DATE, -1L)
+            if (lastRollover == periodDateMillis) {
+                Log.i(TAG, "Daily rollover skipped for ${Util.formatDate(periodDate)} (already done)")
+                TsDataUtil.clearDataForDate(context, periodDate)
+                changed = true
+                continue
+            }
+
+            val snapshots = TsDataUtil.getPeriodCounts(context, periodDate)
+            val detailedData = TsDataUtil.snapshotForDate(context, periodDate)
+
+            if (snapshots.isNotEmpty()) {
+                HistoryDataUtil.addDailySnapshot(context, periodDate, snapshots, detailedData)
+            }
+
+            TsDataUtil.clearDataForDate(context, periodDate)
+            prefs.edit().putLong(LAST_ROLLOVER_DATE, periodDateMillis).apply()
+            changed = true
+            Log.i(TAG, "Daily rollover completed for ${Util.formatDate(periodDate)}")
         }
 
-        val snapshots = arrayListOf<PeriodColorCount>()
-        val widgetIds = getWidgetIds(context)
-        val detailedData = TsDataUtil.snapshot(context)
-        val rolledOverColors = mutableSetOf<Int>()
-
-        for (widgetId in widgetIds) {
-            val color = loadPref(context, widgetId, COLOR)
-            if (color == 0) continue
-            if (!rolledOverColors.add(color)) continue
-
-            val count = TsDataUtil.getWidgetCount(context, widgetId)
-            snapshots.add(PeriodColorCount(color, color, count))
-            TsDataUtil.clearWidgetData(context, widgetId)
+        if (changed) {
+            CounterWidget.updateWidgets(context)
         }
-
-        if (snapshots.isNotEmpty()) {
-            HistoryDataUtil.addDailySnapshot(context, previousDate, snapshots, detailedData)
-        }
-
-        prefs.edit().putLong(LAST_ROLLOVER_DATE, previousDateMillis).apply()
-        CounterWidget.updateWidgets(context)
-        Log.i(TAG, "Daily rollover completed for ${Util.formatDate(previousDate)}")
     }
 
     private fun scheduleNextMidnight(context: Context) {
@@ -90,16 +93,6 @@ class DailyRolloverReceiver : BroadcastReceiver() {
             "Next midnight rollover scheduled for ${Util.formatDate(Date(triggerAtMillis))} " +
                 "(${Date(triggerAtMillis)})"
         )
-    }
-
-    private fun previousDateAtMidnight(): Date {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.time
     }
 
     private fun nextMidnightMillis(): Long {

@@ -52,6 +52,66 @@ class TsDataUtil {
             return copyData(readGrouped(context))
         }
 
+        fun snapshotForDate(context: Context, periodDate: Date): TsData {
+            val normalizedDate = Util.startOfDay(periodDate)
+            val map = readGrouped(context)
+            val filtered = TsData()
+
+            for ((dataKey, timestamps) in map) {
+                val timestampsForDate = timestamps.filter { Util.startOfDay(it).time == normalizedDate.time }
+                if (timestampsForDate.isNotEmpty()) {
+                    filtered[dataKey] = ArrayList(timestampsForDate.map { Date(it.time) })
+                }
+            }
+
+            return filtered
+        }
+
+        fun getActivePeriodDatesBeforeToday(context: Context): List<Date> {
+            val today = Util.today()
+            val dates = sortedSetOf<Long>()
+
+            for (timestamps in readGrouped(context).values) {
+                for (timestamp in timestamps) {
+                    val periodDate = Util.startOfDay(timestamp)
+                    if (periodDate.time < today.time) {
+                        dates.add(periodDate.time)
+                    }
+                }
+            }
+
+            return dates.map { Date(it) }
+        }
+
+        fun getPeriodCounts(context: Context, periodDate: Date): ArrayList<PeriodColorCount> {
+            val counts = arrayListOf<PeriodColorCount>()
+            for ((dataKey, timestamps) in snapshotForDate(context, periodDate)) {
+                val color = getCurrentColorForDataKey(context, dataKey)
+                if (color != 0) {
+                    counts.add(PeriodColorCount(color, color, timestamps.size))
+                }
+            }
+            return counts
+        }
+
+        fun clearDataForDate(context: Context, periodDate: Date) {
+            val normalizedDate = Util.startOfDay(periodDate)
+            val map = readGrouped(context)
+            val emptyKeys = arrayListOf<Int>()
+
+            for ((dataKey, timestamps) in map) {
+                timestamps.removeAll { Util.startOfDay(it).time == normalizedDate.time }
+                if (timestamps.isEmpty()) {
+                    emptyKeys.add(dataKey)
+                }
+            }
+
+            for (dataKey in emptyKeys) {
+                map.remove(dataKey)
+            }
+            write(context, map)
+        }
+
         private fun write(context: Context, map: TsData) {
             val file = File(context.applicationInfo.dataDir, FILE_NAME)
             val outputStream = ObjectOutputStream(FileOutputStream(file))
